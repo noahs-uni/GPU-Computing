@@ -1,0 +1,4 @@
+\subsection{Correctness}
+Since it assumes a perfectly even distribution of the problem without any overhead for distributing and collecting the work or communcation between the processors, Amdahl's law will give an upper bound for most computations.\\
+For example, when executing a sorting algorithm in parallel, all of the data needs to be distributed and collected, while not much computation is done per data element. In this case, the speedup will be much lower than predicted by Amdahl's law.\\
+There are also cases where the speedup can be higher than predicted. An example would be a matrix multiplication, where only after the data has been distributed to the processors, the data then might fit fully into the caches, leading to a superlinear speedup.

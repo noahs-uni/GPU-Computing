@@ -1,0 +1,7 @@
+\subsection{Deriving Amdahl's Law}
+Amdahl's Law gives a speedup \( S \) for a parallel execution \(T_p\) with respect to a serial execution \(T_s\) as:
+\[S=\frac{T_s}{T_p}\]
+\(T_p\) consists of a parallel fraction \(p\) and a serial fraction \((1-p)\), so that for \(n\) processors:
+\[T_p=(1-p)T_s+\frac{pT_s}{n}\]
+Inserting this into the speedup equation gives:
+\[S=\frac{T_s}{(1-p)T_s+\frac{pT_s}{n}}=\frac{1}{(1-p)+\frac{p}{n}}\]
