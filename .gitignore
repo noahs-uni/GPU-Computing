@@ -3,3 +3,5 @@
 *.fls
 *.fdb_latexmk
 *.synctex.gz
+*/bin
+*_out.txt
