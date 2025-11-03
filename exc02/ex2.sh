@@ -3,4 +3,6 @@
 #SBATCH -p exercise-gpu
 #SBATCH -o ex2_out.txt
 
-bin/nullKernelAsync
+#bin/nullKernelAsync
+#bin/nullKernelSync
+bin/busyWait

@@ -1,0 +1,3 @@
+Avg busy-wait cycles: 12797
+Baseline launch time: 6.449594 us
+Avg busy-wait time: 13.457387 us

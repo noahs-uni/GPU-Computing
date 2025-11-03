@@ -5,7 +5,7 @@ NVCC=nvcc
 NVCC_FLAGS=-O2 --compiler-options "-O2 -Wall -Wextra"
 
 .PHONY: build
-build: ./bin/nullKernelAsync
+build: ./bin/nullKernelAsync ./bin/nullKernelSync ./bin/busyWait
 
 .PHONY: clean
 clean:
@@ -15,4 +15,10 @@ clean:
 rebuild: clean build
 
 ./bin/nullKernelAsync: ./src/nullKernelAsync.cu
+	$(NVCC) $(NVCC_FLAGS) -o $@ $^ $(INC) $(LIB)
+
+./bin/nullKernelSync: ./src/nullKernelSync.cu
+	$(NVCC) $(NVCC_FLAGS) -o $@ $^ $(INC) $(LIB)
+
+./bin/busyWait: ./src/busyWait.cu
 	$(NVCC) $(NVCC_FLAGS) -o $@ $^ $(INC) $(LIB)

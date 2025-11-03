@@ -51,7 +51,7 @@ main()
 {
     int gridSize[] = {1, 2, 4, 8, 32,  128, 512, 2048, 8192, 16384};
     int blockSize[] = {1, 2, 4, 8, 16, 32, 64, 128, 512, 1024};
-    
+
     // initialize GPU context
     NullKernel<<<1,1>>>();
     cudaDeviceSynchronize();
@@ -65,19 +65,18 @@ main()
         chTimerGetTime( &startG[g] );
         for ( int i = 0; i < cIterations; i++ ) {
             NullKernel<<<gridSize[g],1>>>();
+            cudaDeviceSynchronize();
         }
-        cudaDeviceSynchronize();
         chTimerGetTime( &stopG[g] );
     }
-
 
     // iterate along block sizes
     for (int b = 0; b < 10; b++) {
         chTimerGetTime( &startB[b] );
         for ( int i = 0; i < cIterations; i++ ) {
             NullKernel<<<1,blockSize[b]>>>();
+            cudaDeviceSynchronize();
         }
-        cudaDeviceSynchronize();
         chTimerGetTime( &stopB[b] );
     }
 
@@ -86,8 +85,8 @@ main()
         chTimerGetTime( &startM[m] );
         for ( int i = 0; i < cIterations; i++ ) {
             NullKernel<<<gridSize[m],blockSize[m]>>>();
+            cudaDeviceSynchronize();
         }
-        cudaDeviceSynchronize();
         chTimerGetTime( &stopM[m] );
     }
 
