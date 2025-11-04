@@ -5,3 +5,4 @@
 *.synctex.gz
 */bin
 *_out.txt
+.vscode
