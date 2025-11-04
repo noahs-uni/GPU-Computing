@@ -5,7 +5,7 @@ NVCC=nvcc
 NVCC_FLAGS=-O2 --compiler-options "-O2 -Wall -Wextra"
 
 .PHONY: build
-build: ./bin/nullKernelAsync ./bin/nullKernelSync ./bin/busyWait
+build: ./bin/nullKernelAsync ./bin/nullKernelSync ./bin/busyWait ./bin/Break-even_miro ./bin/Data_trans_D2H_miro ./bin/Data_trans_H2D_miro
 
 .PHONY: clean
 clean:
@@ -21,4 +21,13 @@ rebuild: clean build
 	$(NVCC) $(NVCC_FLAGS) -o $@ $^ $(INC) $(LIB)
 
 ./bin/busyWait: ./src/busyWait.cu
+	$(NVCC) $(NVCC_FLAGS) -o $@ $^ $(INC) $(LIB)
+
+./bin/Break-even_miro: ./src/Break-even_miro.cu
+	$(NVCC) $(NVCC_FLAGS) -o $@ $^ $(INC) $(LIB)
+
+./bin/Data_trans_D2H_miro: ./src/Data_trans_D2H_miro.cu
+	$(NVCC) $(NVCC_FLAGS) -o $@ $^ $(INC) $(LIB)
+
+./bin/Data_trans_H2D_miro: ./src/Data_trans_H2D_miro.cu
 	$(NVCC) $(NVCC_FLAGS) -o $@ $^ $(INC) $(LIB)
