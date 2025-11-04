@@ -14,7 +14,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-DEFAULT_CSV = Path("/home/noah/Documents/GPU/GPU-Computing/exc02/2.1.csv")
+DEFAULT_CSV = Path("/home/noah/Documents/GPU/GPU-Computing/exc02/result_noah_2.1.csv")
 
 
 def load_groups(csv_path):
@@ -40,15 +40,18 @@ def plot_pairs(groups, out_path=None):
     if len(groups) < 6:
         raise RuntimeError(f"expected 6 groups in CSV, got {len(groups)}")
     pairs = [(0, 3), (1, 4), (2, 5)]
-    fig, axes = plt.subplots(1, 3, figsize=(18, 5), squeeze=False)
-    axes = axes[0]
-    for ax, (a_idx, s_idx) in zip(axes, pairs):
+    titles = ["Scale grid size", "Scale block size", "Scale grid + block size"]
+
+    for pair_idx, ((a_idx, s_idx), title) in enumerate(zip(pairs, titles)):
+        # Create new figure for each pair
+        fig, ax = plt.subplots(figsize=(8, 5))
+
         labels_a, vals_a = groups[a_idx]
         labels_s, vals_s = groups[s_idx]
         # Ensure consistent x axis: prefer labels from async group
         labels = labels_a
         x = np.arange(len(labels))
-        # Truncate or pad series to match label length
+
         def align(vals, target_len):
             vals = list(vals)
             if len(vals) > target_len:
@@ -68,13 +71,18 @@ def plot_pairs(groups, out_path=None):
         ax.set_ylabel("time (ms)")
         ax.grid(True, linestyle=":", alpha=0.6)
         ax.legend()
-        ax.set_title(f"Series {a_idx+1} (async) vs {s_idx+1} (sync)")
+        ax.set_title(title)
 
-    plt.tight_layout()
-    if out_path:
-        fig.savefig(out_path, dpi=200)
-        print(f"saved figure to {out_path}")
-    plt.show()
+        plt.tight_layout()
+
+        if out_path:
+            # Generate unique filename for each plot
+            plot_path = out_path.parent / f"plot_2_1_{pair_idx+1}{out_path.suffix}"
+            fig.savefig(plot_path, dpi=200)
+            print(f"saved figure to {plot_path}")
+
+        plt.show()
+        plt.close(fig)  # Close the figure to free memory
 
 
 if __name__ == "__main__":
