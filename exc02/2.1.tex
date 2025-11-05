@@ -1,0 +1,35 @@
+\subsection{Raw Kernel Startup Time}
+
+The first messurement already shows, that a simple usage of asynchronous versus synchronous execution can improve the runtime of code by 2,92 micro seconds.
+\begin{lstlisting}[caption={Asynchrounous NullKernel start with 1 Grid 1 Block},captionpos=b]
+ chTimerGetTime( &start );
+ for ( int i = 0; i < cIterations; i++ ) {
+ 	NullKernel<<<1,1>>>();
+}
+cudaDeviceSynchronize();
+chTimerGetTime( &stop );
+\end{lstlisting}
+  
+  \begin{lstlisting}[caption={Synchrounous NullKernel start with 1 Grid 1 Block},captionpos=b]
+chTimerGetTime( & start_syn );
+        for ( int i = 0; i < cIterations; i++) {
+                NullKernel<<<1,1>>>();
+                cudaDeviceSynchronize();
+        }
+
+        chTimerGetTime( &stop_syn );
+\end{lstlisting}
+The Execution of the Synchronization is here by put outside of the loop. The next Task explores the usage of Grids and Blocks in a GPU. Herefore the NullKernel Task of the Previous execution is used. By varying the grid size or the block size for synchrounous or asynchrounous tasks, it is visible that in both options the asynchronious task are faster then the synchronious. The grafik \ref{fig:201AsynSyn} shows, that by in smaller grid sizes, both kernels maintain a nearly constant runtime. However, when the number of blocks increase beyond several thousand, the runtime rises sharply. This sugests, that larger grids increase the scheduling and management overhead on the GPU. 
+\begin{figure}[h!]
+  \includegraphics[scale=0.7]{plot\_2\_1\_1\_Luis.png}
+  \caption{exercise 2.1, asynchronous vs. synchronous varying grid single block}
+  \label{fig:201AsynSyn}
+\end{figure}
+
+The second messurement of the NullKernel execution time, where the block size changes, shows very little runtime difference for eighter Asynchronious nor Synchronious execution (this shows the graf \ref{fig:202AsynSyn}). Since the Asynchronious execution of Tasks is in both Cases is the faster mode, it is underlinned, that only the overall amount of blocks has an influence onto the runtime. This comes frome the fact that only there the overall amount to administrate these blocks and scedule those is tasks is increased.
+\begin{figure}[h!]
+  \includegraphics[scale=0.7]{plot\_2\_1\_2\_Luis.png}
+  \caption{exercise 2.1, asynchronous vs. synchronous single grid varying block}
+  \label{fig:202AsynSyn}
+\end{figure}
+All in all the overhead scales in grid size, but not with block size. And the Asynchronious execution reduces the kernel dispatch overhead significantly. 
