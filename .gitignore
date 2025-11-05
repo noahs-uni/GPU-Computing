@@ -6,3 +6,4 @@
 */bin
 *_out.txt
 .vscode
+*/.ipynb_checkpoints/*
