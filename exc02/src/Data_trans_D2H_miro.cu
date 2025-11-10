@@ -22,9 +22,10 @@ main()
 
         for ( int j = 0; j < iter[i]; j++ ) {
             cudaMemcpy(hmem, dmem, dat, cudaMemcpyDeviceToHost);
+            cudaDeviceSynchronize();
         }
 
-        cudaDeviceSynchronize();
+        
         chTimerGetTime( &stop );
         double microseconds = 1e6*chTimerElapsedTime( &start, &stop );
         double usPerTransfer = microseconds / (float) iter[i];
