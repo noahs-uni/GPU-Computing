@@ -10,11 +10,11 @@ spack load cuda@12.4.0
 OUTPUT_FILE="strided_memory_access_results.txt"
 
 # Stride values to test (5 values between 1 and 32)
-STRIDES=(0 1 5 8 10 16 24 32)
+STRIDES=(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 20 32 50 64 90 128 151 256 301 512 1024)
 
 # Constant parameters
 THREADS_PER_BLOCK=1024
-THREADBLOCKS=1
+THREADBLOCKS=16
 
 # Number of iterations for stable results
 ITERATIONS=100

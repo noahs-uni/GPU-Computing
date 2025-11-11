@@ -19,7 +19,7 @@ THREADS_PER_BLOCK=(32 64 128 256 512 1024)
 ITERATIONS=100
 
 # Write CSV header
-echo "size_bytes,threads_per_block,bandwidth_gbps" > $OUTPUT_FILE
+echo "size_bytes,threads_per_block,threadblocks,bandwidth_gbps" > $OUTPUT_FILE
 
 # Run parameter sweep
 for size in "${DATA_SIZES[@]}"; do

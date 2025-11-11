@@ -276,28 +276,29 @@ main ( int argc, char * argv[] )
                 //<< " µs" << std::endl
                 << std::endl;
 */
-    if ( chCommandLineGetBool ( "global-coalesced", argc, argv ) ) {
-        // CSV format: size,threads_per_block,bandwidth_gbps
-        double bandwidth = optMemorySize / kernelTimer.getTime(optNumIterations) / (1E09);
-        std::cout.precision(8);
-        std::cout << optMemorySize << "," << block_dim.x << "," << std::fixed << bandwidth << std::endl;
-    }
 
-    if ( chCommandLineGetBool ( "global-stride", argc, argv ) ) {
-        // CSV format: stride,threads_per_block,threadblocks,bandwidth_gbps
-        // Bandwidth calculation: data actually accessed = (gridDim.x * blockDim.x) * sizeof(int)
-        double bandwidth = (grid_dim.x * block_dim.x) * sizeof(int) / kernelTimer.getTime(optNumIterations) / (1E09);
-        std::cout.precision(8);
-        std::cout << optStride << "," << block_dim.x << "," << grid_dim.x << "," << std::fixed << bandwidth << std::endl;
-    }
+        if ( chCommandLineGetBool ( "global-coalesced", argc, argv ) ) {
+            // CSV format: size_bytes,threads_per_block,threadblocks,bandwidth_gbps
+            double bandwidth = optMemorySize / kernelTimer.getTime(optNumIterations) / (1E09);
+            std::cout.precision(8);
+            std::cout << optMemorySize << "," << block_dim.x << "," << grid_dim.x << "," << std::fixed << bandwidth << std::endl;
+        }
 
-    if ( chCommandLineGetBool ( "global-offset", argc, argv ) ) {
-        // CSV format: offset,threads_per_block,threadblocks,bandwidth_gbps
-        // Bandwidth calculation: data actually accessed = (gridDim.x * blockDim.x) * sizeof(int)
-        double bandwidth = (grid_dim.x * block_dim.x) * sizeof(int) / kernelTimer.getTime(optNumIterations) / (1E09);
-        std::cout.precision(8);
-        std::cout << optOffset << "," << block_dim.x << "," << grid_dim.x << "," << std::fixed << bandwidth << std::endl;
-    }
+
+        if ( chCommandLineGetBool ( "global-stride", argc, argv ) ) {
+            // CSV format: stride,threads_per_block,threadblocks,bandwidth_gbps
+            double bandwidth = (grid_dim.x * block_dim.x) * sizeof(int) / kernelTimer.getTime(optNumIterations) / (1E09);
+            std::cout.precision(8);
+            std::cout << optStride << "," << block_dim.x << "," << grid_dim.x << "," << std::fixed << bandwidth << std::endl;
+        }
+
+        
+        if ( chCommandLineGetBool ( "global-offset", argc, argv ) ) {
+            // CSV format: offset,threads_per_block,threadblocks,bandwidth_gbps
+            double bandwidth = (grid_dim.x * block_dim.x) * sizeof(int) / kernelTimer.getTime(optNumIterations) / (1E09);
+            std::cout.precision(8);
+            std::cout << optOffset << "," << block_dim.x << "," << grid_dim.x << "," << std::fixed << bandwidth << std::endl;
+        }
 
     return 0;
 }

@@ -7,20 +7,20 @@ spack env activate cuda
 spack load cuda@12.4.0
 
 # Output file for coalesced memory access results
-OUTPUT_FILE="coalesced_memory_access_results.txt"
+OUTPUT_FILE="coalesced_memory_access_results_threadblocks.txt"
 
 # Data sizes to test (in bytes) - from 1KB to 1GB
 DATA_SIZES=(1024 4096 16384 65536 262144 1048576 4194304 16777216 67108864 268435456 1073741824)
 
 # Threadblocks to test (threads per block constant at 1024)
-THREADBLOCKS=(1, 2, 16, 32)
-THREADS_PER_BLOCK=32
+THREADBLOCKS=(1, 2, 8, 16, 32)
+THREADS_PER_BLOCK=1024
 
 # Number of iterations for stable results
-ITERATIONS=1
+ITERATIONS=100
 
 # Write CSV header
-echo "size_bytes,threadblocks,bandwidth_gbps" > $OUTPUT_FILE
+echo "size_bytes,threads_per_block,threadblocks,bandwidth_gbps" > $OUTPUT_FILE
 
 # Run parameter sweep
 for size in "${DATA_SIZES[@]}"; do
