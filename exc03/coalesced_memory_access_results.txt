@@ -1,0 +1,2 @@
+size_bytes,threadblocks,bandwidth_gbps
+1024,32,0.00003824
