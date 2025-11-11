@@ -27,7 +27,7 @@ int main()
         double microseconds = 1e6 * chTimerElapsedTime(&start, &stop);
         double usPerTransfer = microseconds / (float)iter[i];
         double datarate = 1e6 * dat / usPerTransfer;
-        printf("%zu %.6f %.6f\n", dat, usPerTransfer, datarate);
+        printf("%zu %.6f\n", dat, datarate);
 
         cudaFree(dmem1);
         cudaFree(dmem2);

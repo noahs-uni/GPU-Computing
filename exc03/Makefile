@@ -4,7 +4,7 @@ INC=-I./inc -I$(CUDA_ROOT)/include
 LIB=-L$(CUDA_ROOT)/lib64
 
 .PHONY: build
-build: ./bin/memCpy
+build: ./bin/memCpy, ./bin/Data_trans_D2D
 
 .PHONY: clean
 clean:
