@@ -1,4 +1,29 @@
 \documentclass[12pt,twoside,a4paper]{article}
+\usepackage{listings}
+\usepackage{tcolorbox}
+\usepackage{placeins}
+
+\newcommand{\lstfont}[1]{\color{#1}\scriptsize\ttfamily}
+
+\lstset{
+    language=[ANSI]C++,
+    showstringspaces=false,
+    backgroundcolor=\color{black!90},
+    basicstyle=\lstfont{white},
+    identifierstyle=\lstfont{white},
+    keywordstyle=\lstfont{magenta!40},
+    numberstyle=\lstfont{white},
+    stringstyle=\lstfont{cyan},
+    commentstyle=\lstfont{yellow!30},
+    emph={
+        cudaMalloc, cudaFree,
+        __global__, __shared__, __device__, __host__,
+        __syncthreads,
+    },
+    emphstyle={\lstfont{green!60!white}},
+    breaklines=true
+}
+
 
 \title{GPU Computing\\
 Exercise 2}
@@ -21,11 +46,12 @@ Exercise 2}
 
 \section{PCIe Data Movements}
 \input{2.3.tex}
+\FloatBarrier
 
 \section{Presenting}
 Willing to present:\\
 2.1: Yes\\
-2.2:\\
-2.3:
+2.2: Yes\\
+2.3: Yes
 
 \end{document}
