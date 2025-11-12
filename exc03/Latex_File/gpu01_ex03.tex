@@ -1,0 +1,58 @@
+\documentclass[12pt,twoside,a4paper]{article}
+\usepackage{listings}
+\usepackage{tcolorbox}
+\usepackage{placeins}
+\usepackage{hyperref}
+\usepackage{float}
+\newcommand{\lstfont}[1]{\color{#1}\scriptsize\ttfamily}
+
+\lstset{
+    language=[ANSI]C++,
+    showstringspaces=false,
+    backgroundcolor=\color{black!90},
+    basicstyle=\lstfont{white},
+    identifierstyle=\lstfont{white},
+    keywordstyle=\lstfont{magenta!40},
+    numberstyle=\lstfont{white},
+    stringstyle=\lstfont{cyan},
+    commentstyle=\lstfont{yellow!30},
+    emph={
+        cudaMalloc, cudaFree,
+        __global__, __shared__, __device__, __host__,
+        __syncthreads,
+    },
+    emphstyle={\lstfont{green!60!white}},
+    breaklines=true
+}
+
+
+\title{GPU Computing\\
+Exercise 2}
+\author{
+  Luis Wenzel\\
+  Miro Joensuu\\
+  Daniel Bayer\\
+  Noah Schneider
+}
+\date{}
+
+\begin{document}
+
+\maketitle
+\section{Presenting}
+Willing to present:\\
+3.1 Yes\\
+3.2 Yes\\
+3.3 Yes\\
+3.4 Yes \\
+\input{3_1.tex}
+
+\input{3_2.tex}	
+
+\input{3_3.tex}
+
+\input{3_4.tex}
+\FloatBarrier
+
+
+\end{document}
