@@ -5,12 +5,12 @@ at which we are able to copy data from global to global memory. The amount of pa
 The advantage is small at small data sizes but increases ever larger at larger datasizes as we have less overhead.
 We reach peak transfer speeds with 1024 threads already quite early at 1MB with around 18 GB/s with 1024 threads,
 after which the performance drops. Possibly this could have something to do with the size of the L2 cache of around
-1MB, where with data larger than 1MB the threads have to deal with slower and multiple accesses to main memory.
+1MB, where with data larger than 1MB the threads have to deal with slower and multiple accesses to main memory. This is shown in figure \ref{fig:2.2a}.
 
 \begin{figure}
     \centering
     \includegraphics[scale=0.7]{pictures/coalesced_thread_access_a.png}
-    \caption{exercise 2.2: 1 threadblock, different numbers of threads}
+    \caption{exercise 3.2: 1 threadblock, different numbers of threads}
     \label{fig:2.2a}
 \end{figure}
 
@@ -19,11 +19,11 @@ of more threadblocks emerge only at larger data sizes. Peak performance is reach
 a data size of 67MB with 212 GB/s, close to the cudaMemcpy bandwidth. More parallelism in this case also means higher transfer speeds.
 As with varying the number of threads, the performance is best at a few MB but drops slightly when reaching even larger data sizes around 1GB.
 Again this could have to do with the size of the L2 cache. The optimal performance was reached with the maximum number of threads (1024) and
-threadblocks (32).
+threadblocks (32). This is shown in figure \ref{fig:2.2b}.
 
 \begin{figure}
     \centering
     \includegraphics[scale=0.7]{pictures/coalesced_thread_access_b.png}
-    \caption{exercise 2.2: 1024 threads, different numbers of blocks}
+    \caption{exercise 3.2: 1024 threads, different numbers of blocks}
     \label{fig:2.2b}
 \end{figure}

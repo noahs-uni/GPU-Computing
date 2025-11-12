@@ -8,12 +8,12 @@ the performance drops we do not see an exponential decrease in the performance a
 with our small data sizes of only 64kB (16 threadblocks x 1024 threads x 4 bytes per thread), where launch
 overhead still dominates above proper cache utilization. Although, as the data we want to transfer should exceed the maximum
 L1 cache capacity of 48kB, underutilizing cache should start to become a problem. Another possible explanation is, of course,
-a mistake in the code.
+a mistake in the code. This is shown in figure \ref{fig:2.3}.
 
 
 \begin{figure}
     \centering
     \includegraphics[scale=0.7]{pictures/strided_thread_access.png}
-    \caption{exercise 2.3, thread access with stride}
+    \caption{exercise 3.3, thread access with stride}
     \label{fig:2.3}
 \end{figure}
