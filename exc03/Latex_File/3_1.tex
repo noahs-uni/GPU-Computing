@@ -1,13 +1,24 @@
+<<<<<<< HEAD
 
 \newpage
 \section{Global Memory} 
 \subsection{cudaMemcpy}
 
 In this Task, the use of cudaMalloc(\&hmem, dat); and cudaMemcpy(hmem, dmem, dat, cudaMemcpyDeviceToDevice); was analyzed. That way we copy data from device to device. This happends of around 263 GB/s. This is also, because on the device overhead dominates at small datasizes. We are only able to get close to peak bandwith once we reach larger data sizes, approching 1GB/s.  The D2D vastly outperforms the approximately 10GB/s we get on D2H or H2D over PCIe. In our Graph, we also show the other coppying speed of the other data. If you would like to take a look at our data, the data of the graphs is in folder (\url{exc03/Latex_File/data/analysis}). This is shown in figure \ref{fig:exc03_1_D2D}
+=======
+\section{Global Memory - cudaMemcpy} 
+\subsection{cudaMemcpy Task}
+
+In this Task, the use of cudaMalloc(\&hmem, dat); and cudaMemcpy(hmem, dmem, dat, cudaMemcpyDeviceToDevice); was analyzed. That way we copy data from device to device. In the Graph \ref{fig:exc03_1_D2D} we can see, that a saturation of the coppying speed occurs on higher data transportation rates. In our Graph, we also show the other coppying speed of the other data. If you would like to take a look at our data, the data of the graphs is in folder (\url{exc03/Latex_File/data/analysis}).
+>>>>>>> 792f72f665a582f24594403cf1deafa1b2bb9d66
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{pictures/exc03_1_D2D_together.png}
+<<<<<<< HEAD
     \caption{exercise 3.1: Speed difference of Device to Device memory copy}
+=======
+    \caption{Speed difference of Device to Device memory copy}
+>>>>>>> 792f72f665a582f24594403cf1deafa1b2bb9d66
     \label{fig:exc03_1_D2D}
 \end{figure}

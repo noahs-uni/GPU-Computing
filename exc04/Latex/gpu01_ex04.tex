@@ -4,6 +4,8 @@
 \usepackage{placeins}
 \usepackage{hyperref}
 \usepackage{float}
+\usepackage[ngerman]{babel}
+
 \newcommand{\lstfont}[1]{\color{#1}\scriptsize\ttfamily}
 
 \lstset{
@@ -34,45 +36,23 @@ Exercise 2}
   Daniel Bayer\\
   Noah Schneider
 }
-\date{}
 
+
+\date{18.11.2025}
 \begin{document}
 
 \maketitle
-<<<<<<< HEAD
-
+\newpage
+\tableofcontents
 \section{Presenting}
 Willing to present:\\
-3.1 Yes\\
-3.2 Yes\\
-3.3 Yes\\
-3.4 Yes \\
-\input{3_1.tex}
+6.1.1 Yes\\
+6.1.2 Yes\\
+\section{Reading}
+\input{4_1_1.tex}
 
-\input{3_2.tex}	
+\input{4_1_2.tex}	
 
-\input{3_3.tex}
-
-\input{3_4.tex}
 \FloatBarrier
-
-=======
-\section{Global Memory - cudaMemcpy}
-\input{3_1.tex}
-
-\section{Global Memory - coalesced thread access}
-\input{3_2.tex}	
-
-\section{Global Memory -thread access with stride}
-\input{3_3.tex}
-
-
-\section{Global Memory -thread access with offset}
-\input{3_4.tex}
-\FloatBarrier
-
-\section{Presenting}
-Willing to present:\\
->>>>>>> 792f72f665a582f24594403cf1deafa1b2bb9d66
 
 \end{document}

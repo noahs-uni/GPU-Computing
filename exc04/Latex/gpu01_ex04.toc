@@ -1,0 +1,5 @@
+\babel@toc {ngerman}{}\relax 
+\contentsline {section}{\numberline {1}Presenting}{2}{section.1}%
+\contentsline {section}{\numberline {2}Reading}{2}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Debunking the 100X GPU vs. CPU Myth: An Evaluation of Throughput Computing on CPU and GPU}{2}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}NVIDIA Tesla: A unified graphics and computing architecture}{3}{subsection.2.2}%
