@@ -1,0 +1,145 @@
+s,t,grid_dim,block_dim,memcpy_h2d_ms,bandwith_h2d_gbps,memcpy_d2h_ms,bandwidth_d2h_gbps,t_matmul_ms,total_ms
+128,1,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,1.26007,NA,NA
+128,2,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,1.26007,NA,NA
+128,4,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,1.26007,NA,NA
+128,8,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,1.26007,NA,NA
+128,10,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,1.26007,NA,NA
+128,16,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,1.26007,NA,NA
+128,25,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,1.26007,NA,NA
+128,32,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,1.26007,NA,NA
+256,1,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,11.7038,NA,NA
+256,2,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,11.7038,NA,NA
+256,4,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,11.7038,NA,NA
+256,8,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,11.7038,NA,NA
+256,10,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,11.7038,NA,NA
+256,16,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,11.7038,NA,NA
+256,25,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,11.7038,NA,NA
+256,32,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,11.7038,NA,NA
+512,1,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,232.194,NA,NA
+512,2,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,232.194,NA,NA
+512,4,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,232.194,NA,NA
+512,8,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,232.194,NA,NA
+512,10,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,232.194,NA,NA
+512,16,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,232.194,NA,NA
+512,25,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,232.194,NA,NA
+512,32,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,232.194,NA,NA
+800,1,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,310.655,NA,NA
+800,2,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,310.655,NA,NA
+800,4,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,310.655,NA,NA
+800,8,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,310.655,NA,NA
+800,10,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,310.655,NA,NA
+800,16,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,310.655,NA,NA
+800,25,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,310.655,NA,NA
+800,32,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,310.655,NA,NA
+1024,1,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,3383.11,NA,NA
+1024,2,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,3383.11,NA,NA
+1024,4,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,3383.11,NA,NA
+1024,8,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,3383.11,NA,NA
+1024,10,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,3383.11,NA,NA
+1024,16,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,3383.11,NA,NA
+1024,25,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,3383.11,NA,NA
+1024,32,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,3383.11,NA,NA
+2048,1,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,27068.8,NA,NA
+2048,2,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,27068.8,NA,NA
+2048,4,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,27068.8,NA,NA
+2048,8,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,27068.8,NA,NA
+2048,10,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,27068.8,NA,NA
+2048,16,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,27068.8,NA,NA
+2048,25,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,27068.8,NA,NA
+2048,32,[31m***
+*** Error - Allocation of Memory failed!!!
+***[0m,0.000000,27068.8,NA,NA
