@@ -6,17 +6,17 @@
 spack env activate cuda
 spack load cuda@12.4.0
 
-OUTPUT_FILE="4_2.csv"
+OUTPUT_FILE="5_2.csv"
 
 # Header: s = problem size, t = threads-per-block, then the program output fields,
 # plus total_ms = memcpy_h2d_ms + memcpy_d2h_ms + t_matmul_ms
-echo "s,t,grid_dim,block_dim,memcpy_h2d_ms,bandwith_h2d_gbps,memcpy_d2h_ms,bandwidth_d2h_gbps,t_matmul_ms,total_ms" > $OUTPUT_FILE
+echo "s,t,grid_dim,block_dim,memcpy_h2d_ms,bandwith_h2d_gbps,memcpy_d2h_ms,bandwidth_d2h_gbps,t_matmul_ms,total_ms,speedup" > $OUTPUT_FILE
 
 # Threads-per-block (t x t <= 1k)
 T_LIST=(1 2 4 8 10 16 25 32)
 
 # Problem sizes
-S_LIST=(128 256 512 800 1024 2048 4096 6000)
+S_LIST=(128 256 512 800 1024 2048 4096 5000)
 
 for s in "${S_LIST[@]}"; do
   # run host baseline once per problem size
