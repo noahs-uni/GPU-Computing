@@ -1,12 +1,12 @@
 \subsection{GPU: version using shared memory}
-The task is beeing split into diffrent subtasks. For the first subtask, we messured the execution time of diffrent threads-per-block, our chosen problem size is thesize 2048 * 2048. The result shows, that with shared memory, the optimal execution time varies between the Dimension of 8 on each block Size till the range of 13 on the blocksize. With larger blocksizes with the problemsize of 2048*2048 the execution time worsens. This can also be seen in graphic \ref{fig:shared_vs_naive}.
+The task is split into different subtasks. For the first subtask, we measured the execution time of different threads-per-block, our chosen problem size is the size 2048 * 2048. The result shows that, with shared memory, the optimal execution time varies between the dimension of 8 on each block Size untill the range of 13 on the block size. With larger block sizes, using a problemsize of 2048*2048, the execution time worsens. This can also be seen in graphic \ref{fig:shared_vs_naive}.
 \begin{figure}[h]
     \includegraphics[width=\textwidth]{GPUKernelLaufzeitSharedMemoryVsNaive_2048_2048__LOG.png}
     \caption{Runtime in Shared Memory vs. Naive memory}
     \label{fig:shared_vs_naive}
 \end{figure}
 \\
-The secound subtask explains the overall runtime together with different components over different problemsizes. It is visible, that with an larger problem size, the execution time increases as well. Picture \ref{fig:shared_TOTAL} shows the steady increase in time. 
+The secound subtask explains the overall runtime together with different components over different problem sizes. It is visible, that with a larger problem size, the execution time increases as well. \ref{fig:shared_TOTAL} shows the steady increase in time. 
 \begin{figure}[h]
     \includegraphics[width=\textwidth]{exc5_3_2_Vary_Threads_Diffrent_Problemsize.png}
     \caption{Executiontime of diffrent problemsizes by diffrent threads per Block}
