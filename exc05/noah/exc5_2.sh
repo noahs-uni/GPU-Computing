@@ -6,17 +6,17 @@
 spack env activate cuda
 spack load cuda@12.4.0
 
-OUTPUT_FILE="5_2_tpb.csv"
+OUTPUT_FILE="5_2_size_l1.csv"
 
 rm $OUTPUT_FILE
 touch $OUTPUT_FILE
 cat header.csv >> $OUTPUT_FILE
 
 # Threads-per-block (t x t <= 1k)
-T_LIST=(1 2 4 5 8 16 25 32)
+T_LIST=(16)
 
 # Problem sizes
-S_LIST=(4096)
+S_LIST=(128 256 500 512 2048 4192 4300 8192)
 
 ITERATIONS=10
 

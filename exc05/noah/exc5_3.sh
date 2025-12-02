@@ -6,7 +6,7 @@
 spack env activate cuda
 spack load cuda@12.4.0
 
-OUTPUT_FILE="5_3.csv"
+OUTPUT_FILE="5_3_size_l1.csv"
 
 rm $OUTPUT_FILE
 touch $OUTPUT_FILE
@@ -16,7 +16,7 @@ cat header.csv >> $OUTPUT_FILE
 T_LIST=(32)
 
 # Problem sizes
-S_LIST=(800 1024 4096 5000 8000 8192)
+S_LIST=(128 256 500 512 2048 4192 4300 8192)
 
 ITERATIONS=10
 

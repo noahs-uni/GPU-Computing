@@ -2,7 +2,7 @@
  *
  *       Computer Engineering Group, Heidelberg University - GPU Computing Exercise 05
  *
- *                                 Group : TODO
+ *                                 Group : 01
  *
  *                                  File : main.cu
  *
@@ -187,6 +187,20 @@ main(int argc, char * argv[])
         h_matrixB[i] = static_cast<float>(x + y);
     }
 
+    bool cpu = chCommandLineGetBool("cpu", argc, argv);
+    if (cpu)
+    {
+        kernelTimer.start();
+        MatrixMulOnHostBlocked(h_matrixA, h_matrixB, h_matrixC, 
+        static_cast<long>(matrixWidth), 32);
+        kernelTimer.stop();
+        std::cout 
+            << matrixSize << ","
+            << "32" << ","
+                << 1e3 * kernelTimer.getTime() << std::endl;
+    } else {
+            
+
     //
     // Copy Data to the Device
     //
@@ -336,6 +350,7 @@ main(int argc, char * argv[])
                 << ","
                 << 1e3 * kernelTimer.getTime() << std::endl;
     }
+}
 
     if (chCommandLineGetBool("print-matrix", argc, argv) 
        && matrixWidth <= 16) {
