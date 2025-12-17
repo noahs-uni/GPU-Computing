@@ -25,6 +25,7 @@ const static int DEFAULT_BLOCK_DIM   =  128;
 //
 void printHelp(char *);
 
+void cpuReduction(int numElements, float* dataIn, float* dataOut);
 
 extern void reduction_Kernel_Wrapper(dim3 gridSize, dim3 blockSize, int numElements, float* dataIn, float* dataOut);
 
@@ -47,11 +48,6 @@ main(int argc, char * argv[])
 		printHelp(argv[0]);
 		exit(0);
 	}
-
-	std::cout << "***" << std::endl
-			  << "*** Starting ..." << std::endl
-			  << "***" << std::endl;
-
 	ChTimer memCpyH2DTimer, memCpyD2HTimer;
 	ChTimer kernelTimer;
 
@@ -63,6 +59,10 @@ main(int argc, char * argv[])
 	chCommandLineGet<int>(&numElements, "size", argc, argv);
 	numElements = numElements != 0 ?
 			numElements : DEFAULT_MATRIX_SIZE;
+	
+	
+	bool cpuVersion = chCommandLineGetBool("cpu", argc, argv);
+
 	//
 	// Host Memory
 	//
@@ -156,25 +156,29 @@ main(int argc, char * argv[])
 
 	kernelTimer.start();
 	
-	if(!chCommandLineGetBool("thrust", argc, argv)){
-		reduction_Kernel_Wrapper(grid_dim, block_dim, numElements, d_dataIn, d_dataOut);
-	} else{
-		thrust_reduction_Wrapper(numElements, d_dataIn, d_dataOut);
-	}
+	if(cpuVersion){
+		cpuReduction(numElements, h_dataIn, h_dataOut);
+	} else {
+		if(!chCommandLineGetBool("thrust", argc, argv)){
+			reduction_Kernel_Wrapper(grid_dim, block_dim, numElements, d_dataIn, d_dataOut);
+		} else{
+			thrust_reduction_Wrapper(numElements, d_dataIn, d_dataOut);
+		}
 
-	// Synchronize
-	cudaDeviceSynchronize();
+		// Synchronize
+		cudaDeviceSynchronize();
 
-	// Check for Errors
-	cudaError_t cudaError = cudaGetLastError();
-	if (cudaError != cudaSuccess)
-	{
-		std::cout << "\033[31m***" << std::endl
-				  << "***ERROR*** " << cudaError << " - " << cudaGetErrorString(cudaError)
-				  	<< std::endl
-				  << "***\033[0m" << std::endl;
+		// Check for Errors
+		cudaError_t cudaError = cudaGetLastError();
+		if (cudaError != cudaSuccess)
+		{
+			std::cout << "\033[31m***" << std::endl
+					<< "***ERROR*** " << cudaError << " - " << cudaGetErrorString(cudaError)
+						<< std::endl
+					<< "***\033[0m" << std::endl;
 
-		return -1;
+			return -1;
+		}
 	}
 
 	kernelTimer.stop();
@@ -190,8 +194,30 @@ main(int argc, char * argv[])
 
 	memCpyD2HTimer.stop();
 
+	bool checkCorrect = chCommandLineGetBool("c", argc, argv);
+	if (!checkCorrect)
+	{
+		checkCorrect = chCommandLineGetBool("check-correct", argc, argv);
+	}
+	if (checkCorrect) {
+		float cpuResult = 0.0;
+		cpuReduction(numElements, h_dataIn, &cpuResult);
+		if (fabs(cpuResult - *h_dataOut) > 1e-5) {
+			std::cout << "\033[31m***" << std::endl
+					  << "*** Error - Result incorrect: GPU result " << *h_dataOut
+					  << " != CPU result " << cpuResult << std::endl
+					  << "***\033[0m" << std::endl;
+			return -1;
+		} else {
+			std::cout << "\033[32m***" << std::endl
+					  << "*** Correct Result: " << *h_dataOut << std::endl
+					  << "***\033[0m" << std::endl;
+		}
+	}
 	// Print Meassurement Results
-	std::cout << "***" << std::endl
+	if (!cpuVersion){
+		std::cout << numElements << "," << blockSize << "," << 1e3 * kernelTimer.getTime() << "," << kernelTimer.getBandwidth(sizeof(*h_dataIn)) << std::endl;
+		/* std::cout << "***" << std::endl
 			  << "*** Results:" << std::endl
 			  << "***    h_dataOut: " << *h_dataOut << std::endl
 			  << "***    Num Elements: " << numElements << std::endl
@@ -207,7 +233,11 @@ main(int argc, char * argv[])
 				<< " GB/s" << std::endl
 			  << "***    Time for Reduction: " << 1e3 * kernelTimer.getTime()
 				  << " ms" << std::endl
-			  << "***" << std::endl;
+			  << "***" << std::endl; */
+	} else {
+		std::cout << numElements << "," << 1e3 * kernelTimer.getTime() << "," << kernelTimer.getBandwidth(sizeof(*h_dataIn)) << std::endl;
+	}
+	
 
 	// Free Memory
 	if (!pinnedMemory)
@@ -226,6 +256,14 @@ main(int argc, char * argv[])
 	return 0;
 }
 
+void cpuReduction(int numElements, float* dataIn, float* dataOut){
+	float sum = 0.;
+	for(int i=0; i<numElements; i++){
+		sum += dataIn[i];
+	}
+	dataOut[0] = sum;
+} 
+
 void
 printHelp(char * argv)
 {
@@ -243,8 +281,14 @@ printHelp(char * argv)
 			  << "  -s <num-elements>|--size <num-elements>" << std::endl
 			  << "	The size of the Matrix" << std::endl
 			  << "" << std::endl
+			  << "  --cpu" << std::endl
+			  << "	Use cpu Version" << std::endl
+			  << "" << std::endl
 			  << "  -t <threads_per_block>|--threads-per-block <threads_per_block>" 
 			  	<< std::endl
 			  << "	The number of threads per block" << std::endl
+			  << "" << std::endl
+			  << "  -c|--checkt-correct" << std::endl
+			  << "	Check correctness vs CPU version" << std::endl
 			  << "" << std::endl;
 }
