@@ -57,6 +57,7 @@ struct Body_SOA
 //
 void printHelp(char *);
 void printElement(Body_t *, int, int);
+void sharedPrintElement(Body_SOA *, int, int);
 
 //
 // Device Functions
@@ -404,6 +405,63 @@ int main(int argc, char *argv[])
 		}
 
 		kernelTimer.stop();
+
+		//
+		// Copy Back Data
+		//
+		memCpyD2HTimer.start();
+
+		cudaMemcpy(h_particles, d_particles, static_cast<size_t>(numElements * sizeof(*d_particles)), cudaMemcpyDeviceToHost);
+
+		memCpyD2HTimer.stop();
+
+		// Free Memory
+		if (!pinnedMemory)
+		{
+			free(h_particles);
+		}
+		else
+		{
+			cudaFreeHost(h_particles);
+		}
+
+		cudaFree(d_particles);
+
+		float interactionsPerSecond = static_cast<float>(numElements) * static_cast<float>(numElements) * static_cast<float>(numIterations) / kernelTimer.getTime();
+
+		// Print Meassurement Results
+		if (verbose)
+		{
+			std::cout << "***" << std::endl
+					<< "*** Results:" << std::endl
+					<< "***    Num Elements: " << numElements << std::endl
+					<< "***    Num Iterations: " << numIterations << std::endl
+					<< "***    Threads per block: " << blockSize << std::endl
+					<< "***    Time to Copy to Device: " << 1e3 * memCpyH2DTimer.getTime()
+					<< " ms" << std::endl
+					<< "***    Copy Bandwidth: "
+					<< 1e-9 * memCpyH2DTimer.getBandwidth(numElements * sizeof(h_particles))
+					<< " GB/s" << std::endl
+					<< "***    Time to Copy from Device: " << 1e3 * memCpyD2HTimer.getTime()
+					<< " ms" << std::endl
+					<< "***    Copy Bandwidth: "
+					<< 1e-9 * memCpyD2HTimer.getBandwidth(numElements * sizeof(h_particles))
+					<< " GB/s" << std::endl
+					<< "***    Time for n-Body Computation: " << 1e3 * kernelTimer.getTime()
+					<< " ms" << std::endl
+					<< "***" << std::endl;
+		} else {
+			std::cout << numElements << ","
+					<< blockSize << ","
+					<< numIterations << ","
+					//<< 1e3 * memCpyH2DTimer.getTime() << ","
+					//<< 1e-9 * memCpyH2DTimer.getBandwidth(numElements * sizeof(h_particles)) << ","
+					//<< 1e3 * memCpyD2HTimer.getTime() << ","
+					//<< 1e-9 * memCpyD2HTimer.getBandwidth(numElements * sizeof(h_particles)) << ","
+					<< 1e3 * kernelTimer.getTime() << ","
+					<< interactionsPerSecond
+					<< std::endl;
+		}
 
 
 		return 0;
