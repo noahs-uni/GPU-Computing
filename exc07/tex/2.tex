@@ -1,2 +1,3 @@
 \newpage
 \section{Optimized GPU Implementation}
+With regards to using SOA vs AOS: It makes sense to use SOA for this use case, because when we fill the shared memory, we only need to read the position and mass data of each body. A SOA layout allows us to read only those properties, without having to deal with the velocity data, which would otherwise be interleaved in an AOS layout. There might be a penalty for the update of the position, since the position data is stored separately from the velocity data, but this will be negligible compared to the performance gain on the force calculation.\\
