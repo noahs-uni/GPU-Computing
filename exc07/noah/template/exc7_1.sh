@@ -6,18 +6,19 @@
 spack env activate cuda
 spack load cuda@12.4.0
 
-OUTPUT_FILE="7_1_lu.csv"
+OUTPUT_FILE="7_1.csv"
 
 echo "size,blockSize,iterations,time,ips" > $OUTPUT_FILE
 # Problem sizes
-S_LIST=(100 500 1000 5000)
-T_LIST=(1 16 256 512 1024)
+S_LIST=(28000)
+#T_LIST=(1 4 16 64 128 256 512 1024)
+T_LIST=(16 64 128 256 512 1024)
 
 # Execute 10 times for each size in S_LIST
 for threads in "${T_LIST[@]}"; do
   for size in "${S_LIST[@]}"; do
     echo "./bin/nbody -s ${size} -t ${threads} -i 500 --silent"
-    for i in {1..10}; do
+    for i in {1..4}; do
       ./bin/nbody -s ${size} -t ${threads} -i 500 --silent >> $OUTPUT_FILE
     done
   done

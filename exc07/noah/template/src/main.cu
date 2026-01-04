@@ -45,6 +45,13 @@ struct Body_t
 	Body_t() : posMass(make_float4(0, 0, 0, 0)), velocity(make_float3(0, 0, 0)) {}
 };
 
+struct Body_SOA
+{
+	float4 *posMass;
+	float3 *velocity;
+};
+
+
 //
 // Function Prototypes
 //
@@ -141,7 +148,6 @@ simpleNbody_Kernel(int numElements, Body_t *body)
 		elementSpeed = body[elementId].velocity;
 		elementForce = make_float3(0, 0, 0);
 
-		#pragma unroll 100
 		for (int i = 0; i < numElements; i++)
 		{
 			if (i != elementId)
@@ -161,7 +167,27 @@ sharedNbody_Kernel(int numElements, float4 *bodyPos, float3 *bodySpeed)
 {
 	// Use the packed values and SOA to optimize load and store operations
 
-	/*TODO Kernel Code*/
+	extern __shared__ float4 shPosMass[];
+	for(int i = blockIdx.x * blockDim.x + threadIdx.x; i < numElements; i += blockDim.x * gridDim.x){
+		float3 acc_cumulated[3] = {0};	
+		float3 acc[3] = {0};
+		float4 myPosMass = ((float4 *) bodyPos)[i];
+		float3 mySpeed = ((float3 *) bodySpeed)[i];
+		for(int j = 0; j < numElements; j+= blockDim.x){
+			shPosMass[threadIdx.x] = ((float4 *) bodyPos)[j + threadIdx.x];
+			__syncthreads();
+			for(int k = 0; k < blockDim.x; k++){
+				float4 otherPosMass = shPosMass[k];
+				bodyBodyInteraction(myPosMass, otherPosMass, *((float3 *) acc));
+				acc_cumulated->x += acc->x;
+				acc_cumulated->y += acc->y;
+				acc_cumulated->z += acc->z;
+			}
+			__syncthreads();
+		}
+		calculateSpeed(myPosMass.w, mySpeed, *((float3 *) acc_cumulated));
+		((float3 *) bodySpeed)[i] = mySpeed;
+	}
 }
 
 //
@@ -183,6 +209,24 @@ updatePosition_Kernel(int numElements, Body_t *bodies)
 		elementPosMass.z += elementSpeed.z * TIMESTEP;
 		
 		bodies[elementId].posMass = elementPosMass;
+	}
+}
+
+__global__ void
+sharedUpdatePosition_Kernel(int numElements, Body_SOA *bodies)
+{
+	int elementId = blockIdx.x * blockDim.x + threadIdx.x;
+
+	if (elementId < numElements)
+	{
+		float4 elementPosMass = bodies->posMass[elementId];
+		float3 elementSpeed = bodies->velocity[elementId];
+
+		elementPosMass.x += elementSpeed.x * TIMESTEP;
+		elementPosMass.y += elementSpeed.y * TIMESTEP;
+		elementPosMass.z += elementSpeed.z * TIMESTEP;
+		
+		bodies->posMass[elementId] = elementPosMass;
 	}
 }
 
@@ -234,6 +278,136 @@ int main(int argc, char *argv[])
 		pinnedMemory = chCommandLineGetBool("pinned-memory", argc, argv);
 	}
 
+	bool optimized = chCommandLineGetBool("o", argc, argv);
+	if (!optimized)
+	{
+		optimized = chCommandLineGetBool("optimized", argc, argv);
+	}
+
+	if(optimized)
+	{
+		Body_SOA *h_particles;
+		if (!pinnedMemory)
+		{
+			// Pageable
+			h_particles = static_cast<Body_SOA *>(malloc(sizeof(Body_SOA)));
+			h_particles->posMass = static_cast<float4 *>(malloc(static_cast<size_t>(numElements * sizeof(float4))));
+			h_particles->velocity = static_cast<float3 *>(malloc(static_cast<size_t>(numElements * sizeof(float3))));
+		}
+		else
+		{
+			// Pinned
+			h_particles = static_cast<Body_SOA *>(malloc(sizeof(Body_SOA)));
+			cudaMallocHost(&h_particles->posMass, static_cast<size_t>(numElements * sizeof(float4)));
+			cudaMallocHost(&h_particles->velocity, static_cast<size_t>(numElements * sizeof(float3)));
+		}
+		srand(0);
+		for (int i = 0; i < numElements; i++)
+		{
+			h_particles->posMass[i].x = 1e-8 * static_cast<float>(rand());
+			h_particles->posMass[i].y = 1e-8 * static_cast<float>(rand());
+			h_particles->posMass[i].z = 1e-8 * static_cast<float>(rand());
+			h_particles->posMass[i].w = 1e4 * static_cast<float>(rand());
+			h_particles->velocity[i].x = 0.0f;
+			h_particles->velocity[i].y = 0.0f;
+			h_particles->velocity[i].z = 0.0f;
+		}
+
+		Body_SOA *d_particles;
+		cudaMalloc(&d_particles, sizeof(Body_SOA));
+		cudaMalloc(&d_particles->posMass, static_cast<size_t>(numElements * sizeof(float4)));
+		cudaMalloc(&d_particles->velocity, static_cast<size_t>(numElements * sizeof(float3)));
+		if (h_particles == NULL || d_particles == NULL)
+		{
+			std::cout << "\033[31m***" << std::endl
+					  << "*** Error - Memory allocation failed" << std::endl
+					  << "***\033[0m" << std::endl;
+
+			exit(-1);
+		}
+
+		memCpyH2DTimer.start();
+		cudaMemcpy(d_particles->posMass, h_particles->posMass, static_cast<size_t>(numElements * sizeof(float4)), cudaMemcpyHostToDevice);
+		cudaMemcpy(d_particles->velocity, h_particles->velocity, static_cast<size_t>(numElements * sizeof(float3)), cudaMemcpyHostToDevice);
+		memCpyH2DTimer.stop();
+
+		int blockSize = 0,
+		gridSize = 0,
+		numIterations = 0;
+
+		// Number of Iterations
+		chCommandLineGet<int>(&numIterations, "i", argc, argv);
+		chCommandLineGet<int>(&numIterations, "num-iterations", argc, argv);
+		numIterations = numIterations != 0 ? numIterations : DEFAULT_NUM_ITERATIONS;
+
+		// Block Dimension / Threads per Block
+		chCommandLineGet<int>(&blockSize, "t", argc, argv);
+		chCommandLineGet<int>(&blockSize, "threads-per-block", argc, argv);
+		blockSize = blockSize != 0 ? blockSize : DEFAULT_BLOCK_DIM;
+
+		if (blockSize > 1024)
+		{
+			std::cout << "\033[31m***" << std::endl
+					<< "*** Error - The number of threads per block is too big" << std::endl
+					<< "***\033[0m" << std::endl;
+
+			exit(-1);
+		}
+
+		gridSize = ceil(static_cast<float>(numElements) / static_cast<float>(blockSize));
+
+		dim3 grid_dim = dim3(gridSize);
+		dim3 block_dim = dim3(blockSize);
+
+		if (verbose)
+		{	
+			std::cout << "***" << std::endl;
+			std::cout << "*** Grid: " << gridSize << std::endl;
+			std::cout << "*** Block: " << blockSize << std::endl;
+			std::cout << "***" << std::endl;
+		}
+
+		bool silent = chCommandLineGetBool("silent", argc, argv);
+
+		kernelTimer.start();
+
+		for (int i = 0; i < numIterations; i++)
+		{
+			sharedNbody_Kernel<<<grid_dim, block_dim>>>(numElements, d_particles->posMass, d_particles->velocity);
+			sharedUpdatePosition_Kernel<<<grid_dim, block_dim>>>(numElements, d_particles);
+
+			
+			if (!silent)
+			{
+				cudaMemcpy(h_particles->posMass, d_particles->posMass, static_cast<size_t>(numElements * sizeof(float4)), cudaMemcpyDeviceToHost);
+				cudaMemcpy(h_particles->velocity, d_particles->velocity, static_cast<size_t>(numElements * sizeof(float3)), cudaMemcpyDeviceToHost);
+				for (int j = 0; j < numElements; j++){
+					sharedPrintElement(h_particles, j, i + 1);
+				}
+				
+			}
+		}
+
+		// Synchronize
+		cudaDeviceSynchronize();
+
+		// Check for Errors
+		cudaError_t cudaError = cudaGetLastError();
+		if (cudaError != cudaSuccess)
+		{
+			std::cout << "\033[31m***" << std::endl
+					<< "***ERROR*** " << cudaError << " - " << cudaGetErrorString(cudaError)
+					<< std::endl
+					<< "***\033[0m" << std::endl;
+
+			return -1;
+		}
+
+		kernelTimer.stop();
+
+
+		return 0;
+	}
 	Body_t *h_particles;
 	if (!pinnedMemory)
 	{
@@ -441,7 +615,15 @@ void printHelp(char *argv)
 			  << "  --silent"
 			  << std::endl
 			  << "    Suppress print output during iterations (useful for benchmarking)" << std::endl
-			  << "" << std::endl;
+			  << "" << std::endl
+			  << "  -v|--verbose" << std::endl
+			  << "    Verbose output" << std::endl
+			  << "" << std::endl
+			  << "  -h|--help" << std::endl
+			  << "    Show this help" << std::endl
+			  << std::endl
+			  << "  -o|--optimized" << std::endl
+			  << "    Use optimized version with shared memory" << std::endl;
 }
 
 //
@@ -451,6 +633,27 @@ void printElement(Body_t *particles, int elementId, int iteration)
 {
 	float4 posMass = particles[elementId].posMass;
 	float3 velocity = particles[elementId].velocity;
+
+	std::cout << "***" << std::endl
+			  << "*** Printing Element " << elementId << " in iteration " << iteration << std::endl
+			  << "***" << std::endl
+			  << "*** Position: <"
+			  << std::setw(11) << std::setprecision(9) << posMass.x << "|"
+			  << std::setw(11) << std::setprecision(9) << posMass.y << "|"
+			  << std::setw(11) << std::setprecision(9) << posMass.z << "> [m]" << std::endl
+			  << "*** velocity: <"
+			  << std::setw(11) << std::setprecision(9) << velocity.x << "|"
+			  << std::setw(11) << std::setprecision(9) << velocity.y << "|"
+			  << std::setw(11) << std::setprecision(9) << velocity.z << "> [m/s]" << std::endl
+			  << "*** Mass: <"
+			  << std::setw(11) << std::setprecision(9) << posMass.w << "> [kg]" << std::endl
+			  << "***" << std::endl;
+}
+
+void sharedPrintElement(Body_SOA *particles, int elementId, int iteration)
+{
+	float4 posMass = particles->posMass[elementId];
+	float3 velocity = particles->velocity[elementId];
 
 	std::cout << "***" << std::endl
 			  << "*** Printing Element " << elementId << " in iteration " << iteration << std::endl
