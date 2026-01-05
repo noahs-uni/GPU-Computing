@@ -4,7 +4,7 @@ LIB=-L$(CUDA_ROOT)/lib64
 NVCC=nvcc
 
 .PHONY: build
-build: ./bin/nbody ./bin/nbody_optimized
+build: ./bin/nbody ./bin/nbody_optimized ./bin/nbody_streamed
 
 .PHONY: clean
 clean:
@@ -17,4 +17,7 @@ rebuild: clean build
 	$(NVCC) -O2 --compiler-options "-O2 -Wall -Wextra" -o $@ $^ $(INC) $(LIB)
 
 ./bin/nbody_optimized: ./src/optimized_nbody.cu
+	$(NVCC) -O2 --compiler-options "-O2 -Wall -Wextra" -o $@ $^ $(INC) $(LIB)
+
+./bin/nbody_streamed: ./src/optimized_nbody_streamed.cu
 	$(NVCC) -O2 --compiler-options "-O2 -Wall -Wextra" -o $@ $^ $(INC) $(LIB)

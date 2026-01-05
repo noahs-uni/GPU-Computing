@@ -7,13 +7,14 @@ spack env activate cuda
 spack load cuda@12.4.0
 
 # Output file for n-body results
-OUTPUT_FILE="nbody_benchmark_results.txt"
+OUTPUT_FILE="nbody_benchmark_512k_results.txt"
 
 # Object counts to test (numElements)
-OBJECT_COUNTS=(64 128 256 512 1024 2048 4096 8192 16384 32768)
+#OBJECT_COUNTS=(64 128 256 512 1024 2048 4096 8192 16384 32768)
+OBJECT_COUNTS=(512000)
 
 # Number of iterations (can be adjusted)
-NUM_ITERATIONS=1000
+NUM_ITERATIONS=10
 
 # Threads per block (can be adjusted, default is 128)
 THREADS_PER_BLOCK=128

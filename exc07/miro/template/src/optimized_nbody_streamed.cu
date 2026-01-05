@@ -22,7 +22,7 @@
 const static int DEFAULT_NUM_ELEMENTS = 1024;
 const static int DEFAULT_NUM_ITERATIONS = 100;
 const static int DEFAULT_BLOCK_DIM = 128;
-
+const static size_t DEFAULT_SEGMENT_SIZE = 1024 * 1024;
 const static float TIMESTEP = 1e-6;	  // s
 const static float GAMMA = 6.673e-11; // (Nm^2)/(kg^2)
 
@@ -134,31 +134,35 @@ calculateSpeed(float mass, float3 &currentSpeed, float3 force)
 
 
 __global__ void
-sharedNbody_Kernel(int numElements, float4 *bodyPos, float3 *bodyVelocity)
+sharedNbody_Kernel(int numTargetElements, float4 *bodytargetPos, float3 *bodytargetVelocity,
+	int numSourceElements, float4 *bodysourcePos, int targetOffset, int sourceOffset)
 {
 	// Use the packed values and SOA to optimize load and store operations
 	extern __shared__ float4 shared_posMass[];
 	
 	int elementId = blockIdx.x * blockDim.x + threadIdx.x;
 	
-	if (elementId < numElements)
+	if (elementId < numTargetElements)
 	{
-		float4 elementPosMass = bodyPos[elementId];  // SOA: direct array access
-		float3 elementVelocity = bodyVelocity[elementId];  // SOA: direct array access
+		float4 elementPosMass = bodytargetPos[elementId];  // SOA: direct array access
+		float3 elementVelocity = bodytargetVelocity[elementId];  // SOA: direct array access
 		float3 elementForce = make_float3(0, 0, 0);
 		
-		// Blocking: Process particles in chunks of blockDim.x
-		for (int tileStart = 0; tileStart < numElements; tileStart += blockDim.x) {
+		// Blocking: Process source particles in chunks of blockDim.x
+		for (int tileStart = 0; tileStart < numSourceElements; tileStart += blockDim.x) {
 			// Cooperative loading: each thread loads one particle into shared memory
 			int loadIdx = tileStart + threadIdx.x;
-			if (loadIdx < numElements) {
-				shared_posMass[threadIdx.x] = bodyPos[loadIdx];
+			if (loadIdx < numSourceElements) {
+				shared_posMass[threadIdx.x] = bodysourcePos[loadIdx];
 			}
 			__syncthreads();
 			
 			// Process all particles in current tile
-			int tileEnd = (tileStart + blockDim.x < numElements) ? tileStart + blockDim.x : numElements;
+			int tileEnd = (tileStart + blockDim.x < numSourceElements) ? tileStart + blockDim.x : numSourceElements;
 			int tileSize = tileEnd - tileStart;
+			
+			// Calculate global indices for self-interaction check
+			int globalTargetId = targetOffset + elementId;
 			
 #if LOOP_UNROLL_FACTOR > 1
 			// Loop unrolling: process LOOP_UNROLL_FACTOR particles per iteration
@@ -166,24 +170,24 @@ sharedNbody_Kernel(int numElements, float4 *bodyPos, float3 *bodyVelocity)
 			for (; k < tileSize - (LOOP_UNROLL_FACTOR - 1); k += LOOP_UNROLL_FACTOR) {
 				#pragma unroll
 				for (int u = 0; u < LOOP_UNROLL_FACTOR; u++) {
-					int j = tileStart + k + u;
-					if (elementId != j) {  // Don't interact with self
+					int globalSourceId = sourceOffset + tileStart + k + u;
+					if (globalTargetId != globalSourceId) {  // Don't interact with self
 						bodyBodyInteraction(elementPosMass, shared_posMass[k + u], elementForce);
 					}
 				}
 			}
 			// Handle remaining particles
 			for (; k < tileSize; k++) {
-				int j = tileStart + k;
-				if (elementId != j) {  // Don't interact with self
+				int globalSourceId = sourceOffset + tileStart + k;
+				if (globalTargetId != globalSourceId) {  // Don't interact with self
 					bodyBodyInteraction(elementPosMass, shared_posMass[k], elementForce);
 				}
 			}
 #else
 			// Standard loop (no unrolling)
 			for (int k = 0; k < tileSize; k++) {
-				int j = tileStart + k;
-				if (elementId != j) {  // Don't interact with self
+				int globalSourceId = sourceOffset + tileStart + k;
+				if (globalTargetId != globalSourceId) {  // Don't interact with self
 					bodyBodyInteraction(elementPosMass, shared_posMass[k], elementForce);
 				}
 			}
@@ -191,8 +195,9 @@ sharedNbody_Kernel(int numElements, float4 *bodyPos, float3 *bodyVelocity)
 			__syncthreads();
 		}
 		
+		// Update velocity incrementally: v_new = v_old + (F_segment/m) * dt
 		calculateSpeed(elementPosMass.w, elementVelocity, elementForce);
-		bodyVelocity[elementId] = elementVelocity;  // SOA: direct array write
+		bodytargetVelocity[elementId] = elementVelocity;  // Store updated velocity
 	}
 }
 
@@ -234,8 +239,7 @@ int main(int argc, char *argv[])
 			  << "*** Starting ..." << std::endl
 			  << "***" << std::endl;
 
-	ChTimer memCpyH2DTimer, memCpyD2HTimer;
-	ChTimer kernelTimer;
+	ChTimer totalTimer;
 
 	//
 	// Allocate Memory
@@ -299,12 +303,22 @@ int main(int argc, char *argv[])
 	printElement(h_particles->posMass, h_particles->velocity, 0, 0);
 
 	// Device Memory
-	float4* d_posMass;
-	float3* d_velocity;
-	cudaMalloc((void**)&d_posMass, sizeof(float4) * numElements);
-	cudaMalloc((void**)&d_velocity, sizeof(float3) * numElements);
+	// Segment size (default 1MB = 1024*1024 bytes)
+	int segmentSizeInt = 0;
+	chCommandLineGet<int>(&segmentSizeInt, "segment-size", argc, argv);
+	size_t segmentSize = segmentSizeInt != 0 ? static_cast<size_t>(segmentSizeInt) : DEFAULT_SEGMENT_SIZE;
 
-	if (h_particles == NULL || d_posMass == NULL || d_velocity == NULL)
+	float4* d_target_posMass;
+	float3* d_target_velocity;
+	cudaMalloc((void**)&d_target_posMass, segmentSize);
+	cudaMalloc((void**)&d_target_velocity, segmentSize);
+
+	float4* d_source_posMass;
+	float3* d_source_velocity;
+	cudaMalloc((void**)&d_source_posMass, segmentSize);
+	cudaMalloc((void**)&d_source_velocity, segmentSize);
+
+	if (h_particles == NULL || d_target_posMass == NULL || d_target_velocity == NULL || d_source_posMass == NULL || d_source_velocity == NULL)
 	{
 		std::cout << "\033[31m***" << std::endl
 				  << "*** Error - Memory allocation failed" << std::endl
@@ -313,23 +327,26 @@ int main(int argc, char *argv[])
 		exit(-1);
 	}
 
-	//
-	// Copy Data to the Device
-	//
-	memCpyH2DTimer.start();
+	// Streams
+	// stream0: target pos H2D, force computation kernels, position update kernel, target pos D2H
+	// stream1: target velocity H2D, target velocity D2H
+	// stream2: source pos H2D
+	cudaStream_t stream0, stream1, stream2;
+	cudaStreamCreate(&stream0);
+	cudaStreamCreate(&stream1);
+	cudaStreamCreate(&stream2);
 
-	// Copy the raw arrays posMass and velocity to device
-	cudaMemcpy(d_posMass, h_particles->posMass, sizeof(float4) * numElements, cudaMemcpyHostToDevice);
-	cudaMemcpy(d_velocity, h_particles->velocity, sizeof(float3) * numElements, cudaMemcpyHostToDevice);
+	// Calculate number of segments based on concurrent memory requirements
+	// We need 3 segments concurrently on GPU: target_pos (float4), target_vel (float3), source_pos (float4)
+	// Accounting for overhead: 32 bytes per element
+	// Available memory per segment set: 3 * segmentSize (for 3 concurrent segments)
+	// Number of segment sets needed: ceil((32 * numElements) / (3 * segmentSize))
+	int numSegments = (32 * numElements + 3 * segmentSize - 1) / (3 * segmentSize);
+	int numElementsPerSegment = segmentSize / sizeof(float4);
 
-	memCpyH2DTimer.stop();
-
-	//
-	// Get Kernel Launch Parameters
-	//
 	int blockSize = 0,
-		gridSize = 0,
-		numIterations = 0;
+	gridSize = 0,
+	numIterations = 0;
 
 	// Number of Iterations
 	chCommandLineGet<int>(&numIterations, "i", argc, argv);
@@ -344,18 +361,19 @@ int main(int argc, char *argv[])
 	if (blockSize > 1024)
 	{
 		std::cout << "\033[31m***" << std::endl
-				  << "*** Error - The number of threads per block is too big" << std::endl
-				  << "***\033[0m" << std::endl;
+				<< "*** Error - The number of threads per block is too big" << std::endl
+				<< "***\033[0m" << std::endl;
 
 		exit(-1);
 	}
 
 	// Grid size: minimum threads needed to cover all particles
 	// Since kernel uses loop pattern, this ensures all particles are processed
-	gridSize = (numElements + blockSize - 1) / blockSize;
+	gridSize = (numElementsPerSegment + blockSize - 1) / blockSize;
 
 	dim3 grid_dim = dim3(gridSize);
 	dim3 block_dim = dim3(blockSize);
+	size_t sharedMemSize = sizeof(float4) * blockSize;
 
 	std::cout << "***" << std::endl;
 	std::cout << "*** Grid: " << gridSize << std::endl;
@@ -364,53 +382,81 @@ int main(int argc, char *argv[])
 
 	bool silent = chCommandLineGetBool("silent", argc, argv);
 
-	kernelTimer.start();
-
-	// Calculate shared memory size needed per block
-	size_t sharedMemSize = blockSize * sizeof(float4);
+	totalTimer.start();
 	
-	for (int i = 0; i < numIterations; i++)
-	{
-		sharedNbody_Kernel<<<grid_dim, block_dim, sharedMemSize>>>(numElements, d_posMass, d_velocity);
-		cudaDeviceSynchronize(); // Ensure velocity update completes
-		updatePosition_Kernel<<<grid_dim, block_dim>>>(numElements, d_posMass, d_velocity);
-		cudaDeviceSynchronize(); // Ensure position update completes
-
-		if (!silent)
-		{
-			// Copy via device pointers
-			cudaMemcpy(h_particles->posMass, d_posMass, numElements * sizeof(float4), cudaMemcpyDeviceToHost);
-			cudaMemcpy(h_particles->velocity, d_velocity, numElements * sizeof(float3), cudaMemcpyDeviceToHost);
-			printElement(h_particles->posMass, h_particles->velocity, 0, i + 1);
+	// Process in segments: for each target segment, compute forces against all source segments
+	for (int i = 0; i < numIterations; i++) {
+		for (int targetSeg = 0; targetSeg < numSegments; targetSeg++) {
+			// Calculate actual segment sizes (handle partial last segment)
+			int targetStart = targetSeg * numElementsPerSegment;
+			int targetSize = (targetStart + numElementsPerSegment <= numElements) 
+				? numElementsPerSegment 
+				: numElements - targetStart;
+			size_t targetBytes = targetSize * sizeof(float4);
+			size_t targetVelocityBytes = targetSize * sizeof(float3);
+			
+			// Grid size for this segment
+			int targetGridSize = (targetSize + blockSize - 1) / blockSize;
+			dim3 targetGridDim = dim3(targetGridSize);
+			
+			// Copy target segment to device (overlap with previous computation)
+			cudaMemcpyAsync(d_target_posMass, h_particles->posMass + targetStart, 
+				targetBytes, cudaMemcpyHostToDevice, stream0);
+			cudaMemcpyAsync(d_target_velocity, h_particles->velocity + targetStart, 
+				targetVelocityBytes, cudaMemcpyHostToDevice, stream1); // was stream1 in version with streaming, but brought no performance improvement
+			
+			// For each source segment, compute forces and update velocity incrementally
+			for (int sourceSeg = 0; sourceSeg < numSegments; sourceSeg++) {
+				int sourceStart = sourceSeg * numElementsPerSegment;
+				int sourceSize = (sourceStart + numElementsPerSegment <= numElements) 
+					? numElementsPerSegment 
+					: numElements - sourceStart;
+				size_t sourceBytes = sourceSize * sizeof(float4);
+				
+				// Copy source segment to device (use stream2 - can start immediately, overlaps with target copies)
+				cudaMemcpyAsync(d_source_posMass, h_particles->posMass + sourceStart, 
+					sourceBytes, cudaMemcpyHostToDevice, stream2); // was stream2 in version with streaming, but brought no performance improvement
+				
+				// Wait for target and source data to be ready before kernel
+				// Only synchronize when we actually need the data (before kernel launch)
+				cudaStreamSynchronize(stream0);
+				cudaStreamSynchronize(stream1); // was stream1 in version with streaming, but brought no performance improvement
+				cudaStreamSynchronize(stream1); //was stream2 in version with streaming, but brought no performance improvement
+				
+				// Launch kernel: target segment interacts with source segment
+				// Kernel computes forces from this source segment and immediately updates velocity
+				sharedNbody_Kernel<<<targetGridDim, block_dim, sharedMemSize, stream0>>>(
+					targetSize, d_target_posMass, d_target_velocity,
+					sourceSize, d_source_posMass, targetStart, sourceStart);
+			}
+			
+			// Wait for all force computations and velocity updates to complete
+			cudaStreamSynchronize(stream0);
+			
+			// Update positions (on stream0, same as target_pos H2D) - only reads velocities, doesn't modify them
+			updatePosition_Kernel<<<targetGridDim, block_dim, 0, stream0>>>(
+				targetSize, d_target_posMass, d_target_velocity);
+			
+			// Copy results back to host
+			cudaMemcpyAsync(h_particles->velocity + targetStart, d_target_velocity, 
+				targetVelocityBytes, cudaMemcpyDeviceToHost, stream1); // was stream1 in version with streaming, but brought no performance improvement
+			cudaMemcpyAsync(h_particles->posMass + targetStart, d_target_posMass, 
+				targetBytes, cudaMemcpyDeviceToHost, stream0);
 		}
 	}
 
-	// Synchronize
 	cudaDeviceSynchronize();
-
-	// Check for Errors
+	totalTimer.stop();
 	cudaError_t cudaError = cudaGetLastError();
 	if (cudaError != cudaSuccess)
 	{
 		std::cout << "\033[31m***" << std::endl
-				  << "***ERROR*** " << cudaError << " - " << cudaGetErrorString(cudaError)
-				  << std::endl
-				  << "***\033[0m" << std::endl;
+				<< "***ERROR*** " << cudaError << " - " << cudaGetErrorString(cudaError)
+				<< std::endl
+				<< "***\033[0m" << std::endl;
 
 		return -1;
 	}
-
-	kernelTimer.stop();
-
-	//
-	// Copy Back Data
-	//
-	memCpyD2HTimer.start();
-
-	cudaMemcpy(h_particles->posMass, d_posMass, numElements * sizeof(float4), cudaMemcpyDeviceToHost);
-	cudaMemcpy(h_particles->velocity, d_velocity, numElements * sizeof(float3), cudaMemcpyDeviceToHost);
-
-	memCpyD2HTimer.stop();
 
 	// Free Memory
 	if (!pinnedMemory)
@@ -426,8 +472,15 @@ int main(int argc, char *argv[])
 		free(h_particles);
 	}
 
-	cudaFree(d_posMass);
-	cudaFree(d_velocity);
+	cudaFree(d_target_posMass);
+	cudaFree(d_target_velocity);
+	cudaFree(d_source_posMass);
+	cudaFree(d_source_velocity);
+	
+	// Destroy streams
+	cudaStreamDestroy(stream0);
+	cudaStreamDestroy(stream1);
+	cudaStreamDestroy(stream2);
 
 	// Print Meassurement Results
 	std::cout << "***" << std::endl
@@ -435,20 +488,9 @@ int main(int argc, char *argv[])
 			  << "***    Num Elements: " << numElements << std::endl
 			  << "***    Num Iterations: " << numIterations << std::endl
 			  << "***    Threads per block: " << blockSize << std::endl
-			  << "***    Time to Copy to Device: " << 1e3 * memCpyH2DTimer.getTime()
-			  << " ms" << std::endl
-		<< "***    Copy Bandwidth: "
-		<< 1e-9 * memCpyH2DTimer.getBandwidth(numElements * (sizeof(float4) + sizeof(float3)))
-		<< " GB/s" << std::endl
-		<< "***    Time to Copy from Device: " << 1e3 * memCpyD2HTimer.getTime()
-		<< " ms" << std::endl
-		<< "***    Copy Bandwidth: "
-		<< 1e-9 * memCpyD2HTimer.getBandwidth(numElements * (sizeof(float4) + sizeof(float3)))
-			  << " GB/s" << std::endl
-			  << "***    Time for n-Body Computation: " << 1e3 * kernelTimer.getTime()
+			  << "***    Time to Finnish: " << 1e3 * totalTimer.getTime()
 			  << " ms" << std::endl
 			  << "***" << std::endl;
-
 	return 0;
 }
 
@@ -456,7 +498,7 @@ void printHelp(char *argv)
 {
 	std::cout << "Help:" << std::endl
 			  << "  Usage: " << std::endl
-			  << "  " << argv << " [-p] [-s <num-elements>] [-t <threads_per_block>]"
+			  << "  " << argv << " [-p] [-s <num-elements>] [-t <threads_per_block>] [--segment-size <size>]"
 			  << std::endl
 			  << "" << std::endl
 			  << "  -p|--pinned-memory" << std::endl
@@ -471,6 +513,9 @@ void printHelp(char *argv)
 			  << "  -t <threads_per_block>|--threads-per-block <threads_per_block>"
 			  << std::endl
 			  << "    The number of threads per block" << std::endl
+			  << "" << std::endl
+			  << "  --segment-size <size>" << std::endl
+			  << "    Segment size in bytes for streaming (default: 1MB)" << std::endl
 			  << "" << std::endl
 			  << "  --silent"
 			  << std::endl
