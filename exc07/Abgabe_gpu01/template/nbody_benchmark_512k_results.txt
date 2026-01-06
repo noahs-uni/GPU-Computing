@@ -1,0 +1,2 @@
+num_elements,num_iterations,threads_per_block,H2D_time_ms,H2D_bandwidth_GBs,D2H_time_ms,D2H_bandwidth_GBs,kernel_time_ms
+512000,10,128,2.256222,7.26169677,1.264263,12.9593289,24445.7037
